@@ -67,6 +67,7 @@
           const result = await res.json();
           if (callback) callback(result.data);
         } catch (e) {
+          alert("เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
           console.error("API Error:", e);
         } finally {
           setLoading(false);
@@ -176,7 +177,11 @@
                             />
                           </td>
                           <td className="p-6 text-right">
-                             <button onClick={() => callGAS('deleteRecord', ['Users', p.rowid], () => setView('landing'))} className="text-red-200 hover:text-red-500"><Icon name="Trash2" size={16}/></button>
+                             <button onClick={() => {
+                               if(confirm(`ยืนยันการลบร้าน ${p.company}?`)) {
+                                 callGAS('deleteRecord', ['Users', p.rowid], () => setView('landing'));
+                               }
+                             }} className="text-red-200 hover:text-red-500"><Icon name="Trash2" size={16}/></button>
                           </td>
                         </tr>
                       ))}
@@ -221,8 +226,14 @@
               </div>
               <button onClick={() => {
                 const amt = prompt("ระบุจำนวนที่ต้องการเบิก (KG):", "1");
-                if(amt && safeNum(amt) <= remainingAllocation) callGAS('requestWithdrawal', [user.email, amt], () => setView('dashboard'));
-                else if(amt) alert("โควตาไม่พอหรือข้อมูลไม่ถูกต้อง");
+                const numAmt = safeNum(amt);
+                if (amt === null) return; // User cancelled
+                if (numAmt > 0 && numAmt <= remainingAllocation) {
+                  callGAS('requestWithdrawal', [user.email, numAmt], () => {
+                    alert("เบิกกาแฟสำเร็จ");
+                    callGAS('getWithdrawals', [user.email], setUserWithdrawals);
+                  });
+                } else { alert("จำนวนไม่ถูกต้อง หรือโควตาไม่เพียงพอ"); }
               }} className="w-full py-5 bg-[#3C2A21] text-white rounded-2xl font-black uppercase shadow-xl hover:bg-black transition-all">เบิกกาแฟตอนนี้</button>
             </div>
           )}
